@@ -1,7 +1,7 @@
 
-# ETロボコン2025 UMLモデルリポジトリ
+# ETロボコン2025 走行体プログラムリポジトリ
 
-## チーム開発のためのastah & Git運用ガイド 📖
+## チーム開発のためのGit & GitHub運用ガイド 📖
 
 このリポジトリは、ETロボコン2025で実装するプログラムを、チームで効率よく開発・管理するためのものです。
 
@@ -26,7 +26,7 @@
 ```
 main
  │
- ├─ feature/add-new-diagram (作業ブランチ)
+ ├─ feature/doubleloop_tracer (作業ブランチ)
  │   │
  │   └─ (編集 → コミット → プッシュ)
  │
@@ -45,7 +45,7 @@ git checkout main
 git pull origin main
 
 # 3. 新しい作業ブランチを作成し、そのブランチに移動する
-git checkout -b usecase/line-tracer
+git checkout -b feature/doubleloop_tracer
 ```
 
 **ブランチ名のルール (例):**
