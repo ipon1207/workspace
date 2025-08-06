@@ -3,7 +3,8 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "~/work/RasPike-ART/**"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
