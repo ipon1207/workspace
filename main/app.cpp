@@ -9,8 +9,8 @@
 //ここから8/4記述
 // 障害物回避用のグローバル変数を定義
 // Tracer.h で extern 宣言された変数をここで定義します。
-volatile int avoid_mode = 0; // 0: 通常走行, 1: 障害物回避モード
-volatile bool is_avoiding = false; // 回避モードへの遷移を一度だけ行うためのフラグ
+volatile int avoid_mode = 1; // 0: 通常走行, 1: 障害物回避モード
+volatile bool is_avoiding = true; // 回避モードへの遷移を一度だけ行うためのフラグ
 Clock avoidance_timer; // 障害物回避の動作時間調整用タイマー
 //ここまで
 
@@ -73,7 +73,7 @@ void main_task(intptr_t unused) {
   const uint32_t end_blue_count = 6;              // 走行体の停止合図
 
   //ここから8/4記述(微調整対象)
-  const int OBSTACLE_DISTANCE = 150; // 障害物と判断する距離(mm)
+  const int OBSTACLE_DISTANCE = 300; // 障害物と判断する距離(mm)
   const uint32_t AVOIDANCE_DURATION = 8000000; // 回避動作の継続時間(マイクロ秒)
   //ここまで
 
@@ -93,6 +93,12 @@ void main_task(intptr_t unused) {
   clock.sleep(waitTime);
   cooltime.reset();
   tracer.init();
+
+
+  avoidance_timer.reset();
+
+
+
 
   sta_cyc(TRACER_CYC); 
 

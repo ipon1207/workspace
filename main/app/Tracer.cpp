@@ -37,33 +37,40 @@ void Tracer::run() {
     const uint32_t turn_time = 1000000; 
     const uint32_t reverse_time = 500000; 
     const int reverse_speed = -50;
-    const int turn_speed = 50;
+    const int turn_speed_weak = 30;
+    const int turn_speed_strong = 65;
 
     // avoidance_timerの時間に応じて回避動作を段階的に制御
     if (avoidance_timer.now() < reverse_time) {
      // 後退
-      leftWheel.setPower(reverse_speed);
-      rightWheel.setPower(reverse_speed);
+      //leftWheel.setPower(reverse_speed);
+      //rightWheel.setPower(reverse_speed);
+      leftWheel.setPower(0);
+      rightWheel.setPower(0);
      } else if (avoidance_timer.now() < reverse_time + turn_time) {
      // 右に旋回
-         leftWheel.setPower(turn_speed);
-         rightWheel.setPower(-turn_speed);
+         leftWheel.setPower(turn_speed_strong);
+         rightWheel.setPower(turn_speed_weak);
      } else if (avoidance_timer.now() < 3500000) {
     // 回避動作完了後、直進
-         leftWheel.setPower(pwm);
-         rightWheel.setPower(pwm);
+         //leftWheel.setPower(pwm);
+         //rightWheel.setPower(pwm);
+         leftWheel.setPower(0);
+         rightWheel.setPower(0);
      } else if (avoidance_timer.now() < 4000000) {
      // フェーズ1: 停止
          leftWheel.setPower(0);
          rightWheel.setPower(0);
      }else if(avoidance_timer.now() < 5000000 + 1000000 ){
       // フェーズ5: 2回目の旋回（例: 左に旋回し、元の向きに戻る）
-         leftWheel.setPower(-turn_speed);
-         rightWheel.setPower(turn_speed);
+         leftWheel.setPower(turn_speed_weak);
+         rightWheel.setPower(turn_speed_strong + 2);
      } else {
         // フェーズ6: 元のラインに戻るための直進
-         leftWheel.setPower(pwm);
-         rightWheel.setPower(pwm);
+         //leftWheel.setPower(pwm);
+         //rightWheel.setPower(pwm);
+         leftWheel.setPower(turn_speed_strong);
+         rightWheel.setPower(turn_speed_weak);
      }      
      return; // 回避モード中は以降のライン追従ロジックは実行しない
   }
