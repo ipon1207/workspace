@@ -7,6 +7,10 @@ const uint32_t terminate_duration = 100 * 1000; // 処理間の待機時間
 const uint32_t straight_duration = 3000 * 1000; // 走行体を直進させる時間
 const uint32_t increment_duration = 300 * 1000; // 未使用の変数（なにこれ？）
 
+const int bias = -1; // 誤差のバイアス値 (左右のモーターの個体差を埋めるもの、
+                        // 右モーターが左よりも強い場合は正の値、逆の場合は負の値を設定する。
+                        //例：直進のはずが右に曲がってしまうときは、biasを負の値に設定することで、右モーターの出力を上げて左モーターの出力を下げる。)
+
 Clock term_clock;            // 処理間隔を空けるためのタイマー
 Clock blue_count_5_straight; // 直進時間を指定するタイマー
 
@@ -35,39 +39,34 @@ void Tracer::run() {
   if (avoid_mode == 1) {
     // 回避動作の継続時間(マイクロ秒)
     const uint32_t turn_time = 1000000; 
-    const uint32_t reverse_time = 500000; 
+
     const int reverse_speed = -50;
-    const int turn_speed = 50;
+    const int turn_speed_weak = 30;
+    const int turn_speed_strong = 65;
 
     // avoidance_timerの時間に応じて回避動作を段階的に制御
-    if (avoidance_timer.now() < reverse_time) {
-     // 後退
-      leftWheel.setPower(reverse_speed);
-      rightWheel.setPower(reverse_speed);
-     } else if (avoidance_timer.now() < reverse_time + turn_time) {
+     if (avoidance_timer.now() < turn_time) {
      // 右に旋回
-         leftWheel.setPower(turn_speed);
-         rightWheel.setPower(-turn_speed);
-     } else if (avoidance_timer.now() < 3500000) {
-    // 回避動作完了後、直進
-         leftWheel.setPower(pwm);
-         rightWheel.setPower(pwm);
-     } else if (avoidance_timer.now() < 4000000) {
-     // フェーズ1: 停止
-         leftWheel.setPower(0);
-         rightWheel.setPower(0);
-     }else if(avoidance_timer.now() < 5000000 + 1000000 ){
+         leftWheel.setPower(turn_speed_strong + bias -5);
+         rightWheel.setPower(turn_speed_weak - bias);
+     }else if(avoidance_timer.now() < turn_time + 2000000 ){
       // フェーズ5: 2回目の旋回（例: 左に旋回し、元の向きに戻る）
-         leftWheel.setPower(-turn_speed);
-         rightWheel.setPower(turn_speed);
+         leftWheel.setPower(turn_speed_weak + bias);
+         rightWheel.setPower(turn_speed_strong - bias  + 2);
      } else {
-        // フェーズ6: 元のラインに戻るための直進
-         leftWheel.setPower(pwm);
-         rightWheel.setPower(pwm);
+        // フェーズ6: 元のラインに戻るための旋回
+         leftWheel.setPower(turn_speed_strong + bias);
+         rightWheel.setPower(turn_speed_weak - bias );
      }      
      return; // 回避モード中は以降のライン追従ロジックは実行しない
   }
   //ここまで
+
+  if(straight_mode == 1) { // 直進モード
+    leftWheel.setPower(50 + bias);
+    rightWheel.setPower(50 - bias + 1);
+    return; // 直進モード中は以降のライン追従ロジックは実行しない
+  }
 
   int blue = count_blue; // 青色の検知回数
   int pwm_l;
@@ -127,7 +126,8 @@ float Tracer::calc_prop_value() {
   const int tracemode_lr = mode_lr; // app.cppを参照
   const float Kp = 0.60;
   const int target = 50;
+
   int diff = colorSensor.getReflection() - target;
 
-  return tracemode_lr * Kp * diff;
+  return (tracemode_lr * Kp * diff) + bias;
 }

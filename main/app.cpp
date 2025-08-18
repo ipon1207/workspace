@@ -14,6 +14,7 @@ volatile bool is_avoiding = false; // 回避モードへの遷移を一度だけ
 Clock avoidance_timer; // 障害物回避の動作時間調整用タイマー
 //ここまで
 
+volatile int straight_mode = 1; // 0: 通常走行, 1: 直進モード
 
 Tracer tracer; 
 Clock clock;
@@ -74,7 +75,7 @@ void main_task(intptr_t unused) {
 
   //ここから8/4記述(微調整対象)
   const int OBSTACLE_DISTANCE = 150; // 障害物と判断する距離(mm)
-  const uint32_t AVOIDANCE_DURATION = 8000000; // 回避動作の継続時間(マイクロ秒)
+  const uint32_t AVOIDANCE_DURATION = 4000000; // 回避動作の継続時間(マイクロ秒)
   //ここまで
 
   ForceSensor forceSensor(EPort::PORT_D);
@@ -94,6 +95,12 @@ void main_task(intptr_t unused) {
   cooltime.reset();
   tracer.init();
 
+
+  //avoidance_timer.reset(); //デバッグ用
+
+
+
+
   sta_cyc(TRACER_CYC); 
 
   while (1) { 
@@ -101,18 +108,30 @@ void main_task(intptr_t unused) {
     update_color_info(rgb, all, r_rate, g_rate, b_rate);
     // printf("b: %d", rgb.b);
     timer_gettime();
-    // printf("timer is %lf\n",((float)cooltime.now() / 1000000));
+    printf("timer is %lf\n",((float)cooltime.now() / 1000000));
 
     //ここから8/4記述
     // 超音波センサーで障害物を検知
     int distance = ultrasonicSensor.getDistance();
-    printf("distance:%d\n", distance);
+    //printf("distance:%d\n", distance);
 
     // 障害物を検知し、まだ回避モードになっていない場合
     if (distance > 0 && distance < OBSTACLE_DISTANCE && !is_avoiding) {
       printf("Obstacle detected! Switching to avoidance mode.\n");
       // 回避モードをON
       avoid_mode = 1;
+      straight_mode = 0; // 直進モードをOFF、デバッグ用
+      // 回避モードへの遷移を一度だけにする
+      is_avoiding = true;
+      // 回避動作のタイマーをリセット
+      avoidance_timer.reset();
+    }
+
+    if (((float)cooltime.now() / 1000000) >= 0.5  && !is_avoiding){ //秒数で回避モード強制発動、使用するかは超音波センサーがちゃんと動くかどうかで決めてください
+      printf("avoidance mode.\n");
+      // 回避モードをON
+      avoid_mode = 1;
+      straight_mode = 0; // 直進モードをOFF、デバッグ用
       // 回避モードへの遷移を一度だけにする
       is_avoiding = true;
       // 回避動作のタイマーをリセット
@@ -120,7 +139,7 @@ void main_task(intptr_t unused) {
     }
 
     // 回避モードで一定時間経過したら、通常モードに戻る
-    if (is_avoiding && avoidance_timer.now() > AVOIDANCE_DURATION) {
+    if (is_avoiding && avoidance_timer.now() > AVOIDANCE_DURATION && avoid_mode == 1) {
       printf("Avoidance completed! Switching back to normal mode.\n");
     // 回避モードをOFF
       avoid_mode = 0;
