@@ -12,6 +12,7 @@ using namespace spikeapi;
 extern volatile int avoid_mode;
 extern Clock avoidance_timer;
 //ここまで
+extern volatile int straight_mode; // 直進モード
 
 class Tracer { 
 public:

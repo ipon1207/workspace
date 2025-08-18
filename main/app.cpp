@@ -27,7 +27,7 @@ extern "C" {
 #endif
 
 volatile int count_blue = 0; // 青色の検知回数
-volatile int mode_lr = 1; // モード変数（-1: 左寄り, 1: 右寄り）
+volatile int mode_lr = 1; // モード変数（-1: 右寄り, 1: 左寄り）
 
 #ifdef __cplusplus
 }

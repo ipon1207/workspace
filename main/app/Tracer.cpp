@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "app.h"  
 #include "Clock.h"
+#include <utility> 
 
 const uint32_t terminate_duration = 100 * 1000; // 処理間の待機時間
 const uint32_t straight_duration = 3000 * 1000; // 走行体を直進させる時間
@@ -40,24 +41,31 @@ void Tracer::run() {
     // 回避動作の継続時間(マイクロ秒)
     const uint32_t turn_time = 1000000; 
 
-    const int reverse_speed = -50;
-    const int turn_speed_weak = 30;
-    const int turn_speed_strong = 65;
+    int turn_speed_weak = 30;
+    int turn_speed_strong = 60;
+
+        if (mode_lr == -1) {
+        // ↓ この命令が使えるようになります
+        std::swap(turn_speed_weak, turn_speed_strong); 
+
+    }   
 
     // avoidance_timerの時間に応じて回避動作を段階的に制御
      if (avoidance_timer.now() < turn_time) {
-     // 右に旋回
-         leftWheel.setPower(turn_speed_strong + bias -5);
-         rightWheel.setPower(turn_speed_weak - bias);
+     // 1度目の旋回
+      leftWheel.setPower(turn_speed_weak + bias);
+      rightWheel.setPower(turn_speed_strong - bias);
+ 
      }else if(avoidance_timer.now() < turn_time + 2000000 ){
       // フェーズ5: 2回目の旋回（例: 左に旋回し、元の向きに戻る）
-         leftWheel.setPower(turn_speed_weak + bias);
-         rightWheel.setPower(turn_speed_strong - bias  + 2);
+         leftWheel.setPower(turn_speed_strong + bias);
+         rightWheel.setPower(turn_speed_weak - bias);
      } else {
         // フェーズ6: 元のラインに戻るための旋回
-         leftWheel.setPower(turn_speed_strong + bias);
-         rightWheel.setPower(turn_speed_weak - bias );
-     }      
+        leftWheel.setPower(turn_speed_weak + bias);
+         rightWheel.setPower(turn_speed_strong - bias);
+     }     
+
      return; // 回避モード中は以降のライン追従ロジックは実行しない
   }
   //ここまで
