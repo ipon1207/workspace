@@ -14,7 +14,7 @@ volatile bool is_avoiding = false; // 回避モードへの遷移を一度だけ
 Clock avoidance_timer; // 障害物回避の動作時間調整用タイマー
 //ここまで
 
-volatile int straight_mode = 1; // 0: 通常走行, 1: 直進モード
+volatile int straight_mode = 0; // 0: 通常走行, 1: 直進モード
 
 Tracer tracer; 
 Clock clock;
@@ -28,6 +28,10 @@ extern "C" {
 
 volatile int count_blue = 0; // 青色の検知回数
 volatile int mode_lr = 1; // モード変数（-1: 右寄り, 1: 左寄り）
+
+volatile int target_D = -1; // D制御用の変数、微分のための前回の値を保持する変数
+volatile int integral = 0;
+volatile int prev_diff_P = 0;
 
 #ifdef __cplusplus
 }
@@ -127,7 +131,7 @@ void main_task(intptr_t unused) {
       avoidance_timer.reset();
     }
 
-    if (((float)cooltime.now() / 1000000) >= 0.5  && !is_avoiding){ //秒数で回避モード強制発動、使用するかは超音波センサーがちゃんと動くかどうかで決めてください
+    if (((float)cooltime.now() / 1000000) >= 50  && !is_avoiding){ //秒数で回避モード強制発動、使用するかは超音波センサーがちゃんと動くかどうかで決めてください
       printf("avoidance mode.\n");
       // 回避モードをON
       avoid_mode = 1;

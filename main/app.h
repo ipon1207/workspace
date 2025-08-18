@@ -19,6 +19,10 @@ extern void tracer_task(intptr_t exinf);
 extern void tracer_cyc(intptr_t exinf);
 extern volatile int count_blue;
 extern volatile int mode_lr;
+extern volatile int target_D;//D制御用の変数、微分のための前回の値を保持する変数
+extern volatile int integral;//I制御の変数
+extern volatile int prev_diff_P; //I制御の変数のリセットを判断するための変数
+
 
 #endif /* TOPPERS_MACRO_ONLY */
 
