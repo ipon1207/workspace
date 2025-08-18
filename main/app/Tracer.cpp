@@ -8,6 +8,7 @@ const uint32_t terminate_duration = 100 * 1000; // 処理間の待機時間
 const uint32_t straight_duration = 3000 * 1000; // 走行体を直進させる時間
 const uint32_t increment_duration = 300 * 1000; // 未使用の変数（なにこれ？）
 
+
 const int bias = -1; // 誤差のバイアス値 (左右のモーターの個体差を埋めるもの、
                         // 右モーターが左よりも強い場合は正の値、逆の場合は負の値を設定する。
                         //例：直進のはずが右に曲がってしまうときは、biasを負の値に設定することで、右モーターの出力を上げて左モーターの出力を下げる。)
@@ -129,6 +130,7 @@ void Tracer::run() {
 
 }
 
+/*
 float Tracer::calc_prop_value() {
 
   const int tracemode_lr = mode_lr; // app.cppを参照
@@ -138,4 +140,31 @@ float Tracer::calc_prop_value() {
   int diff = colorSensor.getReflection() - target;
 
   return (tracemode_lr * Kp * diff) + bias;
+}
+  */
+
+float Tracer::calc_prop_value() {
+
+  const int tracemode_lr = mode_lr; // app.cppを参照
+  const float Kp = 0.60;
+  const int target = 50;
+  const float Ki = 0.01;
+  const float Kd = 0.30;
+  int diff_D = 0;
+
+  int diff_P = colorSensor.getReflection() - target;
+
+    if (diff_P * prev_diff_P < 0) {
+      integral = 0;
+      printf("---- Integral Reset! ----\n"); // デバッグ用に表示
+  }
+
+  integral += diff_P;
+
+  if(target_D != -1) diff_D = colorSensor.getReflection() - target_D;
+  printf("diff_P: %d, diff_I: %d, diff_D: %d\n", diff_P, integral, diff_D);
+  target_D = colorSensor.getReflection();
+  prev_diff_P = diff_P;
+
+  return (tracemode_lr * Kp * diff_P) + (tracemode_lr * Ki * integral) + (tracemode_lr * Kd *diff_D) + bias;
 }
