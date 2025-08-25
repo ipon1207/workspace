@@ -34,7 +34,10 @@ void Tracer::terminate() {
   term_clock.sleep(terminate_duration);
   leftWheel.stop(); 
   rightWheel.stop();
-
+  leftWheel.stop(); 
+  rightWheel.stop();
+  leftWheel.stop(); 
+  rightWheel.stop();
 }
 
 void Tracer::run() {
@@ -125,25 +128,29 @@ void Tracer::run() {
       pwm_r = pwm - turn;   
     }
     else if(blue % 2 == 0) { // 青色のカウントが偶数のときの処理
-      pwm_l = pwm + turn;
-      pwm_r = pwm - turn;
+      pwm_l = pwm + turn - 13; //ここにおける、減算の値は、(pwm-32)としておく。(pwm=45なら13)
+      pwm_r = pwm - turn - 13;
       if(turn_const){
-        pwm_l = pwm - (15 * mode_lr);
-        pwm_r = pwm + (15 * mode_lr);
-        printf("turn_2");
+        pwm_l = pwm - (10 * mode_lr) - 13;
+        pwm_r = pwm + (10 * mode_lr) - 13;
+        printf("turn_2\n");
         turn_const = false;
-        term_clock.sleep(100*1000);
+        leftWheel.setPower(pwm_l);
+        rightWheel.setPower(pwm_r);
+        term_clock.sleep(500*1000);
       }  
     }
     else if(blue == 1 || blue == 3) { // 青色のカウントが奇数のときの処理
-      pwm_l = pwm - turn;
-      pwm_r = pwm + turn;
+      pwm_l = pwm - turn - 13;
+      pwm_r = pwm + turn - 13;
       if(turn_const){
-        pwm_l = pwm + (15 * mode_lr);
-        pwm_r = pwm - (15 * mode_lr);
-        printf("turn_1");
+        pwm_l = pwm + (10 * mode_lr) - 13;
+        pwm_r = pwm - (10 * mode_lr) - 13;
+        printf("turn_1\n");
         turn_const = false;
-        term_clock.sleep(100*1000);
+        leftWheel.setPower(pwm_l);
+        rightWheel.setPower(pwm_r);
+        term_clock.sleep(500*1000);
       }   
     }
     else{ // 青色のカウントが5以外のときの処理(通常は使用しない)
@@ -183,7 +190,10 @@ float Tracer::calc_prop_value() {
   const float Kd = 0.20;
   int diff_D = 0;
 
-  int diff_P = colorSensor.getReflection() - target;
+  int reflection = colorSensor.getReflection() ;
+
+
+  int diff_P = reflection - target;
 
     if (diff_P * prev_diff_P < 0) {
       integral = 0;
@@ -192,9 +202,9 @@ float Tracer::calc_prop_value() {
 
   integral += diff_P;
 
-  if(target_D != -1) diff_D = colorSensor.getReflection() - target_D;
+  if(target_D != -1) diff_D = reflection - target_D;
   //printf("diff_P: %f, diff_I: %f, diff_D: %f\n", (tracemode_lr * Kp * diff_P), (tracemode_lr * Ki * integral), (tracemode_lr * Kd *diff_D));
-  target_D = colorSensor.getReflection();
+  target_D = reflection;
   prev_diff_P = diff_P;
 
   return (tracemode_lr * Kp * diff_P) + (tracemode_lr * Ki * integral) + (tracemode_lr * Kd *diff_D) + bias;
