@@ -14,7 +14,9 @@ volatile bool is_avoiding = false; // 回避モードへの遷移を一度だけ
 Clock avoidance_timer; // 障害物回避の動作時間調整用タイマー
 //ここまで
 
-volatile int straight_mode = 0; // 0: 通常走行, 1: 直進モード
+volatile bool turn_const = false; //一回だけ旋回を調整するやつ
+
+volatile int straight_mode =  0; // 0: 通常走行, 1: 直進モード
 
 Tracer tracer; 
 Clock clock;
@@ -78,7 +80,7 @@ void main_task(intptr_t unused) {
   const uint32_t end_blue_count = 6;              // 走行体の停止合図
 
   //ここから8/4記述(微調整対象)
-  const int OBSTACLE_DISTANCE = 150; // 障害物と判断する距離(mm)
+  const int OBSTACLE_DISTANCE = 10; // 障害物と判断する距離(mm) 150?
   const uint32_t AVOIDANCE_DURATION = 4000000; // 回避動作の継続時間(マイクロ秒)
   //ここまで
 
@@ -112,7 +114,7 @@ void main_task(intptr_t unused) {
     update_color_info(rgb, all, r_rate, g_rate, b_rate);
     // printf("b: %d", rgb.b);
     timer_gettime();
-    printf("timer is %lf\n",((float)cooltime.now() / 1000000));
+    //printf("timer is %lf\n",((float)cooltime.now() / 1000000));
 
     //ここから8/4記述
     // 超音波センサーで障害物を検知
@@ -131,7 +133,7 @@ void main_task(intptr_t unused) {
       avoidance_timer.reset();
     }
 
-    if (((float)cooltime.now() / 1000000) >= 50  && !is_avoiding){ //秒数で回避モード強制発動、使用するかは超音波センサーがちゃんと動くかどうかで決めてください
+    if (((float)cooltime.now() / 1000000) >= 120  && !is_avoiding){ //秒数で回避モード強制発動、使用するかは超音波センサーがちゃんと動くかどうかで決めてください
       printf("avoidance mode.\n");
       // 回避モードをON
       avoid_mode = 1;
@@ -156,23 +158,26 @@ void main_task(intptr_t unused) {
     
     
     if (b_rate >= 0.40 && rgb.b >= 50 && cooltime.now() > blue_coolTime) {
+        count_blue++;
+        cooltime.reset();
+        printf("Blue Count: %d\n", count_blue);
+        turn_const = true;
+    /*
       while (b_rate >= 0.40 && rgb.b >= 50 || all >= 2100) {
         update_color_info(rgb, all, r_rate, g_rate, b_rate);
         clock.sleep(duration); 
       }
+        */
+      
 
-
-
-      clock.sleep(100 * 1000);
-      count_blue++;
-      cooltime.reset();
-      // printf("Blue Count: %d\n", count_blue);
+      
     } else if (b_rate >= 0.50 && rgb.b >= 50 && cooltime.now() <= blue_coolTime) {
-      // printf("Blue detected! Count: \n");
+       printf("Blue detected! Count: \n");
     } 
 
-    if (count_blue == end_blue_count) {
-      break;
+    if (count_blue >= end_blue_count) {
+        printf("Blue = 6: end \n");
+        break;
     }
   }
 

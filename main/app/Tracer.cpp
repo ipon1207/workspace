@@ -4,12 +4,14 @@
 #include "Clock.h"
 #include <utility> 
 
-const uint32_t terminate_duration = 100 * 1000; // 処理間の待機時間
+const uint32_t terminate_duration = 200 * 1000; // 処理間の待機時間
 const uint32_t straight_duration = 3000 * 1000; // 走行体を直進させる時間
 const uint32_t increment_duration = 300 * 1000; // 未使用の変数（なにこれ？）
 
 
-const int bias = -1; // 誤差のバイアス値 (左右のモーターの個体差を埋めるもの、
+
+
+const int bias = 0; // 誤差のバイアス値 (左右のモーターの個体差を埋めるもの、
                         // 右モーターが左よりも強い場合は正の値、逆の場合は負の値を設定する。
                         //例：直進のはずが右に曲がってしまうときは、biasを負の値に設定することで、右モーターの出力を上げて左モーターの出力を下げる。)
 
@@ -36,6 +38,8 @@ void Tracer::terminate() {
 }
 
 void Tracer::run() {
+
+
   //ここから8/4記述
   // 障害物回避モードの場合
   if (avoid_mode == 1) {
@@ -43,7 +47,7 @@ void Tracer::run() {
     const uint32_t turn_time = 1000000; 
 
     int turn_speed_weak = 30;
-    int turn_speed_strong = 60;
+    int turn_speed_strong = 65;
 
         if (mode_lr == -1) {
         // ↓ この命令が使えるようになります
@@ -72,12 +76,21 @@ void Tracer::run() {
   //ここまで
 
   if(straight_mode == 1) { // 直進モード
-    leftWheel.setPower(50 + bias);
-    rightWheel.setPower(50 - bias + 1);
+    leftWheel.setPower(90 + bias);
+    rightWheel.setPower(90 - bias);
     return; // 直進モード中は以降のライン追従ロジックは実行しない
   }
 
   int blue = count_blue; // 青色の検知回数
+
+/*
+  if(blue >= 1 && !pwm_dec){
+    pwm = pwm -10;
+    pwm_dec = true;
+
+  }
+    */
+
   int pwm_l;
   int pwm_r;
   //printf("Blue Count: %d\n", blue);
@@ -97,8 +110,8 @@ void Tracer::run() {
     } else {
 
       float turn = calc_prop_value();
-      int pwm_l = pwm - turn;
-      int pwm_r = pwm + turn;
+      int pwm_l = pwm + turn;
+      int pwm_r = pwm - turn;
       leftWheel.setPower(pwm_l);
       rightWheel.setPower(pwm_r);
 
@@ -107,13 +120,31 @@ void Tracer::run() {
   else{
 
     float turn = calc_prop_value();
-    if(blue % 2 == 0) { // 青色のカウントが偶数のときの処理
+    if(blue  == 0) { // 青色のカウントが0のときの処理
       pwm_l = pwm + turn;
       pwm_r = pwm - turn;   
+    }
+    else if(blue % 2 == 0) { // 青色のカウントが偶数のときの処理
+      pwm_l = pwm + turn;
+      pwm_r = pwm - turn;
+      if(turn_const){
+        pwm_l = pwm - (15 * mode_lr);
+        pwm_r = pwm + (15 * mode_lr);
+        printf("turn_2");
+        turn_const = false;
+        term_clock.sleep(100*1000);
+      }  
     }
     else if(blue == 1 || blue == 3) { // 青色のカウントが奇数のときの処理
       pwm_l = pwm - turn;
       pwm_r = pwm + turn;
+      if(turn_const){
+        pwm_l = pwm + (15 * mode_lr);
+        pwm_r = pwm - (15 * mode_lr);
+        printf("turn_1");
+        turn_const = false;
+        term_clock.sleep(100*1000);
+      }   
     }
     else{ // 青色のカウントが5以外のときの処理(通常は使用しない)
       pwm_l = pwm;
@@ -146,23 +177,23 @@ float Tracer::calc_prop_value() {
 float Tracer::calc_prop_value() {
 
   const int tracemode_lr = mode_lr; // app.cppを参照
-  const float Kp = 0.60;
-  const int target = 50;
-  const float Ki = 0.01;
-  const float Kd = 0.30;
+  const float Kp = 0.55;
+  const int target = 55;
+  const float Ki = 0.001;
+  const float Kd = 0.20;
   int diff_D = 0;
 
   int diff_P = colorSensor.getReflection() - target;
 
     if (diff_P * prev_diff_P < 0) {
       integral = 0;
-      printf("---- Integral Reset! ----\n"); // デバッグ用に表示
+      //printf("---- Integral Reset! ----\n"); // デバッグ用に表示
   }
 
   integral += diff_P;
 
   if(target_D != -1) diff_D = colorSensor.getReflection() - target_D;
-  printf("diff_P: %d, diff_I: %d, diff_D: %d\n", diff_P, integral, diff_D);
+  //printf("diff_P: %f, diff_I: %f, diff_D: %f\n", (tracemode_lr * Kp * diff_P), (tracemode_lr * Ki * integral), (tracemode_lr * Kd *diff_D));
   target_D = colorSensor.getReflection();
   prev_diff_P = diff_P;
 
