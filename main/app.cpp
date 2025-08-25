@@ -158,16 +158,17 @@ void main_task(intptr_t unused) {
     
     
     if (b_rate >= 0.40 && rgb.b >= 50 && cooltime.now() > blue_coolTime) {
-        count_blue++;
-        cooltime.reset();
-        printf("Blue Count: %d\n", count_blue);
-        turn_const = true;
-    /*
+        
+    
       while (b_rate >= 0.40 && rgb.b >= 50 || all >= 2100) {
         update_color_info(rgb, all, r_rate, g_rate, b_rate);
         clock.sleep(duration); 
       }
-        */
+      count_blue++;
+      cooltime.reset();
+      printf("Blue Count: %d\n", count_blue);
+      turn_const = true;
+        
       
 
       
@@ -182,6 +183,7 @@ void main_task(intptr_t unused) {
   }
 
   stp_cyc(TRACER_CYC); 
+
   tracer.terminate();  
   ext_tsk();           
 
