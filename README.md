@@ -26,7 +26,7 @@
 ```
 main
  │
- ├─ feature/doubleloop_tracer (作業ブランチ)
+ ├─ line_trace (作業ブランチ)
  │   │
  │   └─ (編集 → コミット → プッシュ)
  │
@@ -45,12 +45,11 @@ git checkout main
 git pull origin main
 
 # 3. 新しい作業ブランチを作成し、そのブランチに移動する
-git checkout -b feature/doubleloop_tracer
+git checkout -b line_trace
 ```
 
 **ブランチ名のルール (例):**
-- `feature/追加機能`: 新たな機能の追加 (例: `feature/doubleloop_tracer`)
-- `fix/修正内容`: 修正 (例: `fix/stop_line_tracer`)
+- `設計する機能`: 新たな機能のモデリング (例: `line_trace`）
 
 ### ステップ2: 変更内容の保存（コミット & プッシュ）
 
@@ -58,13 +57,13 @@ git checkout -b feature/doubleloop_tracer
 
 ```bash
 # 1. 変更したファイルをステージングする
-git add app.cpp
+git add line_trace.xml
 
 # 2. 変更内容をコミットする (メッセージは分かりやすく)
-git commit -m "feat: ダブルループの走行機能を実装"
+git commit -m "add: ユースケース図の記述"
 
 # 3. リモートリポジトリにプッシュする
-git push origin feature/doubleloop_tracer
+git push origin line_trace
 ```
 
 > **Tip:** コミットメッセージの先頭に `feat:` `fix:` などを付けると、変更の種類が分かりやすくなります（[Conventional Commits](https://www.conventionalcommits.org/)）。
@@ -85,10 +84,10 @@ GitHub上で、「**`自分の作業ブランチ` → `main`ブランチ**」へ
 
 ```bash
 # ローカルのブランチを削除
-git branch -d feature/doubleloop_tracer
+git branch -d line_trace
 
 # リモートのブランチを削除 (GitHubのPRマージ時に自動で削除する設定も可能)
-git push origin --delete feature/doubleloop_tracer
+git push origin --delete line_trace
 ```
 
 ---
