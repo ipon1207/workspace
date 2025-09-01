@@ -21,7 +21,7 @@ volatile int integral = 0;
 volatile int prev_diff_P = 0;
 
 Tracer tracer;
-Starter stater;
+Starter starter;
 Clock clock;
 Clock cooltime;        // 青の回数カウントのクールタイムのためのタイマー
 Clock avoidance_timer; // 障害物回避の動作時間調整用タイマー
@@ -69,7 +69,7 @@ void main_task(intptr_t unused) {
     double b_rate = 0;
 
     // フォースセンサーが押されるまで待機
-    stater.waitStart();
+    starter.waitStart();
 
     timer_start();
     clock.sleep(waitTime);
