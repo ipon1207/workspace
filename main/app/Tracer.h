@@ -29,7 +29,7 @@ private:
 #ifndef MAKE_RASPIKE
   const int8_t pwm = 30;
 #else
-  const int8_t pwm = 45;
+  const int8_t pwm = 50;
 #endif
   float calc_prop_value();
 };

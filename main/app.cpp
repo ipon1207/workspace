@@ -50,9 +50,9 @@ void update_color_info(ColorSensor::RGB& rgb, double& all, double& r_rate, doubl
     // printf("R:%lf G:%lf B:%lf\n", r_rate, g_rate, b_rate);
 }
 
-void tracer_task(intptr_t exinf) { 
-
-  tracer.run();                    
+void tracer_task(intptr_t exinf) {
+ 
+  tracer.run();                   
   ext_tsk();
 
 }
@@ -80,7 +80,7 @@ void main_task(intptr_t unused) {
   const uint32_t end_blue_count = 6;              // 走行体の停止合図
 
   //ここから8/4記述(微調整対象)
-  const int OBSTACLE_DISTANCE = 10; // 障害物と判断する距離(mm) 150?
+  const int OBSTACLE_DISTANCE = 250; // 障害物と判断する距離(mm) 150?
   const uint32_t AVOIDANCE_DURATION = 4000000; // 回避動作の継続時間(マイクロ秒)
   //ここまで
 
@@ -109,6 +109,7 @@ void main_task(intptr_t unused) {
 
   sta_cyc(TRACER_CYC); 
 
+
   while (1) { 
     clock.sleep(duration);
     update_color_info(rgb, all, r_rate, g_rate, b_rate);
@@ -119,7 +120,7 @@ void main_task(intptr_t unused) {
     //ここから8/4記述
     // 超音波センサーで障害物を検知
     int distance = ultrasonicSensor.getDistance();
-    //printf("distance:%d\n", distance);
+    printf("distance:%d\n", distance);
 
     // 障害物を検知し、まだ回避モードになっていない場合
     if (distance > 0 && distance < OBSTACLE_DISTANCE && !is_avoiding) {
@@ -182,9 +183,13 @@ void main_task(intptr_t unused) {
     }
   }
 
+
   stp_cyc(TRACER_CYC); 
 
   tracer.terminate();  
   ext_tsk();           
+
+
+
 
 }
