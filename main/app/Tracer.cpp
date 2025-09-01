@@ -17,6 +17,7 @@ const int bias = 0; // 誤差のバイアス値 (左右のモーターの個体�
 
 Clock term_clock;            // 処理間隔を空けるためのタイマー
 Clock blue_count_5_straight; // 直進時間を指定するタイマー
+Clock speeddown_clock;
 
 Tracer::Tracer() : leftWheel(EPort::PORT_B, Motor::EDirection::COUNTERCLOCKWISE, true), rightWheel(EPort::PORT_A, Motor::EDirection::CLOCKWISE, true), colorSensor(EPort::PORT_E) {                   
 
@@ -49,8 +50,10 @@ void Tracer::run() {
     // 回避動作の継続時間(マイクロ秒)
     const uint32_t turn_time = 1000000; 
 
-    int turn_speed_weak = 30;
+    int turn_speed_weak = 0;
     int turn_speed_strong = 65;
+    int turn_speed_weak2 = 30;
+    int turn_speed_strong2 = 65;
 
         if (mode_lr == -1) {
         // ↓ この命令が使えるようになります
@@ -66,8 +69,8 @@ void Tracer::run() {
  
      }else if(avoidance_timer.now() < turn_time + 2000000 ){
       // フェーズ5: 2回目の旋回（例: 左に旋回し、元の向きに戻る）
-         leftWheel.setPower(turn_speed_strong + bias);
-         rightWheel.setPower(turn_speed_weak - bias);
+         leftWheel.setPower(turn_speed_strong2 + bias);
+         rightWheel.setPower(turn_speed_weak2 - bias);
      } else {
         // フェーズ6: 元のラインに戻るための旋回
         leftWheel.setPower(turn_speed_weak + bias);
@@ -124,15 +127,28 @@ void Tracer::run() {
 
     float turn = calc_prop_value();
     if(blue  == 0) { // 青色のカウントが0のときの処理
-      pwm_l = pwm + turn;
-      pwm_r = pwm - turn;   
+
+      if(leftWheel.getPower() == rightWheel.getPower() && leftWheel.getPower() == 0){
+        speeddown_clock.reset();
+      }
+
+      if(speeddown_clock.now() >= 11000000){
+        pwm_l = pwm + turn - 20;
+        pwm_r = pwm - turn - 20;
+      }
+      else{
+        pwm_l = pwm + turn;
+        pwm_r = pwm - turn; 
+      }
+
+
     }
     else if(blue % 2 == 0) { // 青色のカウントが偶数のときの処理
-      pwm_l = pwm + turn - 13; //ここにおける、減算の値は、(pwm-32)としておく。(pwm=45なら13)
-      pwm_r = pwm - turn - 13;
+      pwm_l = pwm + turn - (pwm - 32); //ここにおける、減算の値は、(pwm-32)としておく。(pwm=45なら13)
+      pwm_r = pwm - turn - (pwm - 32);
       if(turn_const){
-        pwm_l = pwm - (10 * mode_lr) - 13;
-        pwm_r = pwm + (10 * mode_lr) - 13;
+        pwm_l = pwm - (10 * mode_lr) - (pwm - 32);
+        pwm_r = pwm + (10 * mode_lr) - (pwm - 32);
         printf("turn_2\n");
         turn_const = false;
         leftWheel.setPower(pwm_l);
@@ -141,11 +157,11 @@ void Tracer::run() {
       }  
     }
     else if(blue == 1 || blue == 3) { // 青色のカウントが奇数のときの処理
-      pwm_l = pwm - turn - 13;
-      pwm_r = pwm + turn - 13;
+      pwm_l = pwm - turn - (pwm - 32);
+      pwm_r = pwm + turn - (pwm - 32);
       if(turn_const){
-        pwm_l = pwm + (10 * mode_lr) - 13;
-        pwm_r = pwm - (10 * mode_lr) - 13;
+        pwm_l = pwm + (10 * mode_lr) - (pwm - 32);
+        pwm_r = pwm - (10 * mode_lr) - (pwm - 32);
         printf("turn_1\n");
         turn_const = false;
         leftWheel.setPower(pwm_l);
