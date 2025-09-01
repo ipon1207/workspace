@@ -3,6 +3,7 @@ mkfile_path := $(dir $(lastword $(MAKEFILE_LIST)))
 APPL_CXXOBJS += \
 	Tracer.o \
 	Starter.o \
+	ColorController.o \
 
 SRCLANG := c++
 

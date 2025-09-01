@@ -7,6 +7,7 @@
 #include "ForceSensor.h"
 #include "UltrasonicSensor.h"
 /* カスタムクラス */
+#include "ColorController.h"
 #include "Starter.h"
 #include "Tracer.h"
 
@@ -22,6 +23,7 @@ volatile int prev_diff_P = 0;
 
 Tracer tracer;
 Starter starter;
+ColorController colorController;
 Clock clock;
 Clock cooltime;        // 青の回数カウントのクールタイムのためのタイマー
 Clock avoidance_timer; // 障害物回避の動作時間調整用タイマー
@@ -70,6 +72,11 @@ void main_task(intptr_t unused) {
 
     // フォースセンサーが押されるまで待機
     starter.waitStart();
+
+    while (1) {
+        array<double, 3> rgb_arr = colorController.getLineColorRate();
+        printf("R:%lf G:%lf B:%lf\n", rgb_arr[0], rgb_arr[1], rgb_arr[2]);
+    }
 
     timer_start();
     clock.sleep(waitTime);

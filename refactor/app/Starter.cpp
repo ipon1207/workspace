@@ -10,7 +10,7 @@ Starter::Starter() : touchSensor(EPort::PORT_D) {
 void Starter::waitStart() {
     while (!touchSensor.isTouched()) {
         waitTimer.sleep(waitTime);
-        printLog();
+        // printLog();
     }
 }
 
