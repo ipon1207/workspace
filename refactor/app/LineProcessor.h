@@ -10,13 +10,15 @@ class LineProcessor {
 public:
     LineProcessor();
     int32_t getLineReflection();
-    array<double, 3> getLineColor();
     int getBlueCount();
-    void incrementBlueCount();
+    void handleLineColor();
 
 private:
     ColorSensor lineSensor;
     ColorSensor::RGB lineColorStructure;
     int blueCount = 0;
-    array<double, 3> rgb_rate = {0.0, 0.0, 0.0};
+    array<double, 3> rgbRate = {0.0, 0.0, 0.0};
+
+    array<double, 3> getLineColor();
+    void incrementBlueCount();
 };

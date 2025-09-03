@@ -11,20 +11,27 @@ int32_t LineProcessor::getLineReflection() {
     return lineSensor.getReflection();
 }
 
-array<double, 3> LineProcessor::getLineColor() {
-    lineSensor.getRGB(lineColorStructure);
-    double all = lineColorStructure.r + lineColorStructure.g + lineColorStructure.b;
-    double r_rate = lineColorStructure.r / all;
-    double g_rate = lineColorStructure.g / all;
-    double b_rate = lineColorStructure.b / all;
-    rgb_rate[0] = r_rate;
-    rgb_rate[1] = g_rate;
-    rgb_rate[2] = b_rate;
-    return rgb_rate;
+void LineProcessor::handleLineColor() {
+    array<double, 3> lineColorRate = getLineColor();
+    if (lineColorRate[2] >= 0.48) {
+        incrementBlueCount();
+    }
 }
 
 int LineProcessor::getBlueCount() {
     return blueCount;
+}
+
+array<double, 3> LineProcessor::getLineColor() {
+    lineSensor.getRGB(lineColorStructure);
+    double all = lineColorStructure.r + lineColorStructure.g + lineColorStructure.b;
+    double rRate = lineColorStructure.r / all;
+    double gRate = lineColorStructure.g / all;
+    double bRate = lineColorStructure.b / all;
+    rgbRate[0] = rRate;
+    rgbRate[1] = gRate;
+    rgbRate[2] = bRate;
+    return rgbRate;
 }
 
 void LineProcessor::incrementBlueCount() {

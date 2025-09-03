@@ -18,6 +18,8 @@ LineProcessor lineProcessor;
 using namespace spikeapi;
 
 void tracer_task(intptr_t exinf) {
+    lineProcessor.handleLineColor();
+    printf("blue count is %d\n", lineProcessor.getBlueCount());
     tracer.run(lineProcessor.getLineReflection());
     ext_tsk();
 }
@@ -32,6 +34,9 @@ void main_task(intptr_t unused) {
 
     while (1) {
         clock.sleep(duration);
+        if (lineProcessor.getBlueCount() >= 6) {
+            break;
+        }
     }
 
     stp_cyc(TRACER_CYC);
