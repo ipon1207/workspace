@@ -6,9 +6,11 @@
 /* 宣言ファイル*/
 #include "app.h"
 /* カスタムクラス */
+#include "Starter.h"
 #include "Tracer.h"
 
 Tracer tracer;
+Starter starter;
 Clock clock;
 
 using namespace spikeapi;
@@ -20,12 +22,13 @@ void tracer_task(intptr_t exinf) {
 
 void main_task(intptr_t unused) {
     const uint32_t duration = 100 * 1000;
-    ForceSensor forceSensor(EPort::PORT_D);
+
+    starter.waitTouchForceSensor();
 
     tracer.init();
     sta_cyc(TRACER_CYC);
 
-    while (!forceSensor.isTouched()) {
+    while (1) {
         clock.sleep(duration);
     }
 
