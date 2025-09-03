@@ -6,6 +6,7 @@
 /* 宣言ファイル*/
 #include "app.h"
 /* カスタムクラス */
+#include "CalculationPID.h"
 #include "LineProcessor.h"
 #include "Starter.h"
 #include "Tracer.h"
@@ -14,13 +15,14 @@ Clock clock;
 Tracer tracer;
 Starter starter;
 LineProcessor lineProcessor;
+CalculationPID calculationPID;
 
 using namespace spikeapi;
 
 void tracer_task(intptr_t exinf) {
     lineProcessor.handleLineColor();
-    printf("blue count is %d\n", lineProcessor.getBlueCount());
-    tracer.run(lineProcessor.getLineReflection());
+    calculationPID.setReflection(lineProcessor.getLineReflection());
+    tracer.run(calculationPID.calclationPIDValue());
     ext_tsk();
 }
 
@@ -29,7 +31,6 @@ void main_task(intptr_t unused) {
 
     starter.waitTouchForceSensor(); // スタート待機
 
-    tracer.init();
     sta_cyc(TRACER_CYC);
 
     while (1) {

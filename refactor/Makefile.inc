@@ -4,6 +4,7 @@ APPL_CXXOBJS += \
 	Tracer.o \
 	Starter.o \
 	LineProcessor.o \
+	CalculationPID.o \
 
 SRCLANG := c++
 
