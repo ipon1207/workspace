@@ -6,17 +6,19 @@
 /* 宣言ファイル*/
 #include "app.h"
 /* カスタムクラス */
+#include "LineProcessor.h"
 #include "Starter.h"
 #include "Tracer.h"
 
 Tracer tracer;
 Starter starter;
 Clock clock;
+LineProcessor lineProcessor;
 
 using namespace spikeapi;
 
 void tracer_task(intptr_t exinf) {
-    tracer.run();
+    tracer.run(lineProcessor.getLineReflection());
     ext_tsk();
 }
 
