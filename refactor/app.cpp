@@ -40,6 +40,9 @@ void main_task(intptr_t unused) {
     }
 
     stp_cyc(TRACER_CYC);
+
+    clock.sleep(duration); // 最後の周期タスクの終了を待つ
     tracer.terminate();
+
     ext_tsk();
 }
