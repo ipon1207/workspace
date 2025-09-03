@@ -10,9 +10,9 @@
 #include "Starter.h"
 #include "Tracer.h"
 
+Clock clock;
 Tracer tracer;
 Starter starter;
-Clock clock;
 LineProcessor lineProcessor;
 
 using namespace spikeapi;
@@ -27,7 +27,7 @@ void tracer_task(intptr_t exinf) {
 void main_task(intptr_t unused) {
     const uint32_t duration = 100 * 1000;
 
-    starter.waitTouchForceSensor();
+    starter.waitTouchForceSensor(); // スタート待機
 
     tracer.init();
     sta_cyc(TRACER_CYC);

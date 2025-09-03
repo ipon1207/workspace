@@ -13,8 +13,16 @@ int32_t LineProcessor::getLineReflection() {
 
 void LineProcessor::handleLineColor() {
     array<double, 3> lineColorRate = getLineColor();
-    if (lineColorRate[2] >= 0.48) {
-        incrementBlueCount();
+
+    if (lineColorRate[2] >= 0.48) { // 青色の割合を判定
+
+        if (!isOnBlue) { // 青色を検知した瞬間
+            incrementBlueCount();
+            isOnBlue = true;
+        }
+
+    } else { // 青色を検知していない場合
+        isOnBlue = false;
     }
 }
 

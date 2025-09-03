@@ -17,7 +17,8 @@ private:
     ColorSensor lineSensor;
     ColorSensor::RGB lineColorStructure;
     int blueCount = 0;
-    array<double, 3> rgbRate = {0.0, 0.0, 0.0};
+    array<double, 3> rgbRate = {0.0, 0.0, 0.0}; // ラインの色
+    bool isOnBlue = false;                      // 青ライン上にいるかどうか
 
     array<double, 3> getLineColor();
     void incrementBlueCount();
