@@ -1,187 +1,175 @@
-#include "Tracer.h" 
-#include <stdio.h>
-#include "app.h"  
+#include "Tracer.h"
 #include "Clock.h"
-#include <utility> 
+#include "app.h"
+#include <stdio.h>
+#include <utility>
 
 const uint32_t terminate_duration = 200 * 1000; // 処理間の待機時間
 const uint32_t straight_duration = 3000 * 1000; // 走行体を直進させる時間
 const uint32_t increment_duration = 300 * 1000; // 未使用の変数（なにこれ？）
 
-
-
-
 const int bias = 0; // 誤差のバイアス値 (左右のモーターの個体差を埋めるもの、
-                        // 右モーターが左よりも強い場合は正の値、逆の場合は負の値を設定する。
-                        //例：直進のはずが右に曲がってしまうときは、biasを負の値に設定することで、右モーターの出力を上げて左モーターの出力を下げる。)
+                    // 右モーターが左よりも強い場合は正の値、逆の場合は負の値を設定する。
+                    // 例：直進のはずが右に曲がってしまうときは、biasを負の値に設定することで、右モーターの出力を上げて左モーターの出力を下げる。)
 
 Clock term_clock;            // 処理間隔を空けるためのタイマー
 Clock blue_count_5_straight; // 直進時間を指定するタイマー
 Clock speeddown_clock;
 
-Tracer::Tracer() : leftWheel(EPort::PORT_B, Motor::EDirection::COUNTERCLOCKWISE, true), rightWheel(EPort::PORT_A, Motor::EDirection::CLOCKWISE, true), colorSensor(EPort::PORT_E) {                   
-
+Tracer::Tracer() : leftWheel(EPort::PORT_B, Motor::EDirection::COUNTERCLOCKWISE, true), rightWheel(EPort::PORT_A, Motor::EDirection::CLOCKWISE, true), colorSensor(EPort::PORT_E) {
 }
 
 void Tracer::init() {
 
-  // printf("Tracer\n");
-
+    // printf("Tracer\n");
 }
 
 void Tracer::terminate() {
-
-  printf("Stopped.\n");
-  term_clock.sleep(terminate_duration);
-  leftWheel.stop(); 
-  rightWheel.stop();
-  leftWheel.stop(); 
-  rightWheel.stop();
-  leftWheel.stop(); 
-  rightWheel.stop();
+    printf("Stopped.\n");
+    leftWheel.stop();
+    rightWheel.stop();
 }
 
 void Tracer::run() {
 
+    // ここから8/4記述
+    //  障害物回避モードの場合
+    if (avoid_mode == 1) {
+        // 回避動作の継続時間(マイクロ秒)
+        const uint32_t turn_time = 1000000;
+        const uint32_t back_time = 1000000;
+   
 
-  //ここから8/4記述
-  // 障害物回避モードの場合
-  if (avoid_mode == 1) {
-    // 回避動作の継続時間(マイクロ秒)
-    const uint32_t turn_time = 1000000; 
-
-    int turn_speed_weak = 0;
-    int turn_speed_strong = 65;
-    int turn_speed_weak2 = 30;
-    int turn_speed_strong2 = 65;
+        int back_speed = -50;
+        int turn_speed_weak = 0;
+        int turn_speed_strong = 65;
+        int turn_speed_weak2 = 30;
+        int turn_speed_strong2 = 66;
 
         if (mode_lr == -1) {
-        // ↓ この命令が使えるようになります
-        std::swap(turn_speed_weak, turn_speed_strong); 
+            // ↓ この命令が使えるようになります
+            std::swap(turn_speed_weak, turn_speed_strong);
+            std::swap(turn_speed_weak2, turn_speed_strong2);
+        }
 
-    }   
+        // avoidance_timerの時間に応じて回避動作を段階的に制御
+        if(avoidance_timer.now() < back_time ){
+            leftWheel.setPower(back_speed + bias);
+            rightWheel.setPower(back_speed - bias);
+        }
+        else if (avoidance_timer.now() < (back_time + turn_time)) {
+            // 1度目の旋回
+            leftWheel.setPower(turn_speed_strong + bias);
+            rightWheel.setPower(turn_speed_weak - bias);
 
-    // avoidance_timerの時間に応じて回避動作を段階的に制御
-     if (avoidance_timer.now() < turn_time) {
-     // 1度目の旋回
-      leftWheel.setPower(turn_speed_weak + bias);
-      rightWheel.setPower(turn_speed_strong - bias);
- 
-     }else if(avoidance_timer.now() < turn_time + 2000000 ){
-      // フェーズ5: 2回目の旋回（例: 左に旋回し、元の向きに戻る）
-         leftWheel.setPower(turn_speed_strong2 + bias);
-         rightWheel.setPower(turn_speed_weak2 - bias);
-     } else {
-        // フェーズ6: 元のラインに戻るための旋回
-        leftWheel.setPower(turn_speed_weak + bias);
-         rightWheel.setPower(turn_speed_strong - bias);
-     }     
+        } else if (avoidance_timer.now() < (back_time + turn_time) + 3500000) {
+            // フェーズ5: 2回目の旋回（例: 左に旋回し、元の向きに戻る）
+            leftWheel.setPower(turn_speed_weak2 + bias);
+            rightWheel.setPower(turn_speed_strong2 - bias);
+        } else {
+            // フェーズ6: 元のラインに戻るための旋回
+            leftWheel.setPower(turn_speed_strong + bias);
+            rightWheel.setPower(turn_speed_weak - bias);
+        }
 
-     return; // 回避モード中は以降のライン追従ロジックは実行しない
-  }
-  //ここまで
+        return; // 回避モード中は以降のライン追従ロジックは実行しない
+    }
+    // ここまで
 
-  if(straight_mode == 1) { // 直進モード
-    leftWheel.setPower(90 + bias);
-    rightWheel.setPower(90 - bias);
-    return; // 直進モード中は以降のライン追従ロジックは実行しない
-  }
+    if (straight_mode == 1) { // 直進モード
+        leftWheel.setPower(90 + bias);
+        rightWheel.setPower(90 - bias);
+        return; // 直進モード中は以降のライン追従ロジックは実行しない
+    }
 
-  int blue = count_blue; // 青色の検知回数
+    int blue = count_blue; // 青色の検知回数
 
-/*
-  if(blue >= 1 && !pwm_dec){
-    pwm = pwm -10;
-    pwm_dec = true;
+    /*
+      if(blue >= 1 && !pwm_dec){
+        pwm = pwm -10;
+        pwm_dec = true;
 
-  }
-    */
+      }
+        */
 
-  int pwm_l;
-  int pwm_r;
-  //printf("Blue Count: %d\n", blue);
+    int pwm_l;
+    int pwm_r;
+    // printf("Blue Count: %d\n", blue);
 
-  if (blue == 5) { // 青い丸の部分を通過するときの処理
-    
-    // printf("Blue Count is 5 !\n");
-    // float turn = calc_prop_value();
-    
-    if (blue_count_5_straight.now() <= straight_duration ) {
+    if (blue == 5) { // 青い丸の部分を通過するときの処理
 
-      int pwm_l = pwm ;
-      int pwm_r = pwm ;
-      leftWheel.setPower(pwm_l);
-      rightWheel.setPower(pwm_r);
+        // printf("Blue Count is 5 !\n");
+        // float turn = calc_prop_value();
 
+        if (blue_count_5_straight.now() <= straight_duration) {
+
+            int pwm_l = pwm;
+            int pwm_r = pwm;
+            leftWheel.setPower(pwm_l);
+            rightWheel.setPower(pwm_r);
+
+        } else {
+
+            float turn = calc_prop_value();
+            int pwm_l = pwm + turn;
+            int pwm_r = pwm - turn;
+            leftWheel.setPower(pwm_l);
+            rightWheel.setPower(pwm_r);
+        }
     } else {
 
-      float turn = calc_prop_value();
-      int pwm_l = pwm + turn;
-      int pwm_r = pwm - turn;
-      leftWheel.setPower(pwm_l);
-      rightWheel.setPower(pwm_r);
+        float turn = calc_prop_value();
+        if (blue == 0) { // 青色のカウントが0のときの処理
 
-    }
-  }
-  else{
+            /*if (leftWheel.getPower() == rightWheel.getPower() && leftWheel.getPower() == 0) {
+                speeddown_clock.reset();
+            }
 
-    float turn = calc_prop_value();
-    if(blue  == 0) { // 青色のカウントが0のときの処理
+            if (speeddown_clock.now() >= 11000000  && speeddown_clock.now() < 20000000 * 10) { // 11秒以上から20秒以内の直進しているときには、減速する
+                pwm_l = pwm + turn - 20;
+                pwm_r = pwm - turn - 20;
+            } else {
+                pwm_l = pwm + turn;
+                pwm_r = pwm - turn;
+            }*/
+            pwm_l = pwm + turn;
+            pwm_r = pwm - turn;
 
-      if(leftWheel.getPower() == rightWheel.getPower() && leftWheel.getPower() == 0){
-        speeddown_clock.reset();
-      }
-
-      if(speeddown_clock.now() >= 11000000){
-        pwm_l = pwm + turn - 20;
-        pwm_r = pwm - turn - 20;
-      }
-      else{
-        pwm_l = pwm + turn;
-        pwm_r = pwm - turn; 
-      }
-
-
-    }
-    else if(blue % 2 == 0) { // 青色のカウントが偶数のときの処理
-      pwm_l = pwm + turn - (pwm - 32); //ここにおける、減算の値は、(pwm-32)としておく。(pwm=45なら13)
-      pwm_r = pwm - turn - (pwm - 32);
-      if(turn_const){
-        pwm_l = pwm - (10 * mode_lr) - (pwm - 32);
-        pwm_r = pwm + (10 * mode_lr) - (pwm - 32);
-        printf("turn_2\n");
-        turn_const = false;
+        } else if (blue % 2 == 0) {          // 青色のカウントが偶数のときの処理
+            pwm_l = pwm + turn - (pwm - 32); // ここにおける、減算の値は、(pwm-32)としておく。(pwm=45なら13)
+            pwm_r = pwm - turn - (pwm - 32);
+            if (turn_const) {
+                pwm_l = pwm - (10 * mode_lr) - (pwm - 32);
+                pwm_r = pwm + (10 * mode_lr) - (pwm - 32);
+                printf("turn_2\n");
+                turn_const = false;
+                leftWheel.setPower(pwm_l);
+                rightWheel.setPower(pwm_r);
+                term_clock.sleep(500 * 1000);
+            }
+        } else if (blue == 1 || blue == 3) { // 青色のカウントが奇数のときの処理
+            pwm_l = pwm - turn - (pwm - 32);
+            pwm_r = pwm + turn - (pwm - 32);
+            if (turn_const) {
+                pwm_l = pwm + (10 * mode_lr) - (pwm - 32);
+                pwm_r = pwm - (10 * mode_lr) - (pwm - 32);
+                printf("turn_1\n");
+                turn_const = false;
+                leftWheel.setPower(pwm_l);
+                rightWheel.setPower(pwm_r);
+                term_clock.sleep(500 * 1000);
+            }
+        } else { // 青色のカウントが5以外のときの処理(通常は使用しない)
+            pwm_l = pwm;
+            pwm_r = pwm;
+        }
         leftWheel.setPower(pwm_l);
         rightWheel.setPower(pwm_r);
-        term_clock.sleep(500*1000);
-      }  
-    }
-    else if(blue == 1 || blue == 3) { // 青色のカウントが奇数のときの処理
-      pwm_l = pwm - turn - (pwm - 32);
-      pwm_r = pwm + turn - (pwm - 32);
-      if(turn_const){
-        pwm_l = pwm + (10 * mode_lr) - (pwm - 32);
-        pwm_r = pwm - (10 * mode_lr) - (pwm - 32);
-        printf("turn_1\n");
-        turn_const = false;
-        leftWheel.setPower(pwm_l);
-        rightWheel.setPower(pwm_r);
-        term_clock.sleep(500*1000);
-      }   
-    }
-    else{ // 青色のカウントが5以外のときの処理(通常は使用しない)
-      pwm_l = pwm;
-      pwm_r = pwm;
-    }
-    leftWheel.setPower(pwm_l);
-    rightWheel.setPower(pwm_r);
 
-    if (blue == 4) {
-      blue_count_5_straight.reset();
+        if (blue == 4) {
+            blue_count_5_straight.reset();
+        }
     }
-
-  }
-
 }
 
 /*
@@ -199,29 +187,30 @@ float Tracer::calc_prop_value() {
 
 float Tracer::calc_prop_value() {
 
-  const int tracemode_lr = mode_lr; // app.cppを参照
-  const float Kp = 0.55;
-  const int target = 55;
-  const float Ki = 0.001;
-  const float Kd = 0.20;
-  int diff_D = 0;
+    const int tracemode_lr = mode_lr; // app.cppを参照
+    const float Kp = 0.55;
+    const int target = 55;
+    const float Ki = 0.001;
+    const float Kd = 0.20;
+    int diff_D = 0;
 
-  int reflection = colorSensor.getReflection() ;
+    int reflection = colorSensor.getReflection();
+    //printf("Reflection: %d\n", reflection);
 
-
-  int diff_P = reflection - target;
+    int diff_P = reflection - target;
 
     if (diff_P * prev_diff_P < 0) {
-      integral = 0;
-      //printf("---- Integral Reset! ----\n"); // デバッグ用に表示
-  }
+        integral = 0;
+        // printf("---- Integral Reset! ----\n"); // デバッグ用に表示
+    }
 
-  integral += diff_P;
+    integral += diff_P;
 
-  if(target_D != -1) diff_D = reflection - target_D;
-  //printf("diff_P: %f, diff_I: %f, diff_D: %f\n", (tracemode_lr * Kp * diff_P), (tracemode_lr * Ki * integral), (tracemode_lr * Kd *diff_D));
-  target_D = reflection;
-  prev_diff_P = diff_P;
+    if (target_D != -1)
+        diff_D = reflection - target_D;
+    // printf("diff_P: %f, diff_I: %f, diff_D: %f\n", (tracemode_lr * Kp * diff_P), (tracemode_lr * Ki * integral), (tracemode_lr * Kd *diff_D));
+    target_D = reflection;
+    prev_diff_P = diff_P;
 
-  return (tracemode_lr * Kp * diff_P) + (tracemode_lr * Ki * integral) + (tracemode_lr * Kd *diff_D) + bias;
+    return (tracemode_lr * Kp * diff_P) + (tracemode_lr * Ki * integral) + (tracemode_lr * Kd * diff_D) + bias;
 }

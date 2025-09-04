@@ -21,10 +21,11 @@ public:
   void init();
   void terminate();
   ColorSensor colorSensor;
-
-private:
   Motor leftWheel;
   Motor rightWheel;
+
+private:
+
   const int8_t mThreshold = 20; 
 #ifndef MAKE_RASPIKE
   const int8_t pwm = 30;
