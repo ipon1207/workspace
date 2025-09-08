@@ -12,6 +12,7 @@
 volatile int avoid_mode = 0;       // 0: 通常走行, 1: 障害物回避モード
 volatile bool is_avoiding = false; // 回避モードへの遷移を一度だけ行うためのフラグ
 Clock avoidance_timer;             // 障害物回避の動作時間調整用タイマー
+volatile bool is_black = false;
 // ここまで
 
 volatile bool turn_const = false; // 一回だけ旋回を調整するやつ
@@ -22,6 +23,8 @@ Tracer tracer;
 Clock clock;
 Clock cooltime;                                   // 青の回数カウントのクールタイムのためのタイマー
 UltrasonicSensor ultrasonicSensor(EPort::PORT_F); // ソナーセンサーのインスタンスを作成
+
+Clock task_timer;
 
 #ifdef __cplusplus
 extern "C" {
@@ -51,7 +54,9 @@ void update_color_info(ColorSensor::RGB &rgb, double &all, double &r_rate, doubl
 
 void tracer_task(intptr_t exinf) {
 
+    task_timer.reset();
     tracer.run();
+    printf("tracer_task time: %d\n", task_timer.now());
     ext_tsk();
 }
 
@@ -76,8 +81,8 @@ void main_task(intptr_t unused) {
     const uint32_t end_blue_count = 6;              // 走行体の停止合図
 
     // ここから8/4記述(微調整対象)
-    const int OBSTACLE_DISTANCE = 25;           // 障害物と判断する距離(mm) 150?
-    const uint32_t AVOIDANCE_DURATION = 6500000; // 回避動作の継続時間(マイクロ秒)
+    const int OBSTACLE_DISTANCE = 25;             // 障害物と判断する距離(mm) 150?
+    const uint32_t AVOIDANCE_DURATION = 10250000; // 回避動作の継続時間(マイクロ秒)
     // ここまで
 
     ForceSensor forceSensor(EPort::PORT_D);
@@ -105,19 +110,19 @@ void main_task(intptr_t unused) {
     while (1) {
         clock.sleep(duration);
         update_color_info(rgb, all, r_rate, g_rate, b_rate);
-        //printf("R:%d G:%d B:%d\n", rgb.r, rgb.g, rgb.b);
-  
+        // printf("R:%d G:%d B:%d\n", rgb.r, rgb.g, rgb.b);
+
         timer_gettime();
         // printf("timer is %lf\n",((float)cooltime.now() / 1000000));
 
         // ここから8/4記述
         //  超音波センサーで障害物を検知
         int distance = ultrasonicSensor.getDistance();
-        //printf("distance:%d\n", distance);
+        // printf("distance:%d\n", distance);
 
-        printf("MotorSpeed: L: %d, R: %d\n", tracer.leftWheel.getSpeed(), tracer.rightWheel.getSpeed() );
+        // printf("MotorSpeed: L: %d, R: %d\n", tracer.leftWheel.getSpeed(), tracer.rightWheel.getSpeed());
 
-        if ((tracer.leftWheel.getSpeed() + tracer.rightWheel.getSpeed()) <= 600 && clock.now() > 2000000 && !is_avoiding) {
+        if ((tracer.leftWheel.getSpeed() + tracer.rightWheel.getSpeed()) <= 600 && clock.now() > 1 * 1000 * 1000 && !is_avoiding) {
             printf("Obstacle detected! Switching to avoidance mode.\n");
             // 回避モードをON
             avoid_mode = 1;
@@ -127,7 +132,6 @@ void main_task(intptr_t unused) {
             // 回避動作のタイマーをリセット
             avoidance_timer.reset();
         }
-
 
         // 障害物を検知し、まだ回避モードになっていない場合
         if (distance > 0 && distance < OBSTACLE_DISTANCE && !is_avoiding) {
@@ -162,24 +166,37 @@ void main_task(intptr_t unused) {
         }
         // ここまで
 
+        if (avoid_mode == 1 && b_rate <= 0.40 && rgb.b <= 300 && all <= 900 && !is_black) { // 障害物回避モード中に黒を踏んだら
+
+            is_black = true;
+        }
+
         if (b_rate >= 0.40 && rgb.b >= 50 && cooltime.now() > blue_coolTime) {
+
+            if (count_blue >= 4) {
+                count_blue++;
+                cooltime.reset();
+                printf("Blue Count: %d\n", count_blue);
+            }
+
+            if (count_blue >= end_blue_count) {
+                printf("Blue = %d: end \n", count_blue);
+                break;
+            }
 
             while (b_rate >= 0.40 && rgb.b >= 50 || all >= 2100) {
                 update_color_info(rgb, all, r_rate, g_rate, b_rate);
                 clock.sleep(duration);
             }
-            count_blue++;
-            cooltime.reset();
-            printf("Blue Count: %d\n", count_blue);
-            turn_const = true;
+            if (count_blue < 4) {
+                count_blue++;
+                cooltime.reset();
+                printf("Blue Count: %d\n", count_blue);
+                turn_const = true;
+            }
 
         } else if (b_rate >= 0.50 && rgb.b >= 50 && cooltime.now() <= blue_coolTime) {
             printf("Blue detected! Count: \n");
-        }
-
-        if (count_blue >= end_blue_count) {
-            printf("Blue = 6: end \n");
-            break;
         }
     }
 
