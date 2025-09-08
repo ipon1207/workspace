@@ -6,7 +6,6 @@
 
 const uint32_t terminate_duration = 200 * 1000; // 処理間の待機時間
 const uint32_t straight_duration = 1500 * 1000; // 走行体を直進させる時間
-const uint32_t increment_duration = 300 * 1000; // 未使用の変数（なにこれ？）
 
 const int bias = 0; // 誤差のバイアス値 (左右のモーターの個体差を埋めるもの、
                     // 右モーターが左よりも強い場合は正の値、逆の場合は負の値を設定する。
@@ -14,7 +13,6 @@ const int bias = 0; // 誤差のバイアス値 (左右のモーターの個体�
 
 Clock term_clock;            // 処理間隔を空けるためのタイマー
 Clock blue_count_5_straight; // 直進時間を指定するタイマー
-Clock speeddown_clock;
 
 Tracer::Tracer() : leftWheel(EPort::PORT_B, Motor::EDirection::COUNTERCLOCKWISE, true), rightWheel(EPort::PORT_A, Motor::EDirection::CLOCKWISE, true), colorSensor(EPort::PORT_E) {
 }
@@ -32,13 +30,12 @@ void Tracer::terminate() {
 
 void Tracer::run() {
 
-    // ここから8/4記述
-    //  障害物回避モードの場合
+    //  障害物回避モード
     if (avoid_mode == 1) {
-        // 回避動作の継続時間(マイクロ秒)
-        const uint32_t turn_time = 1000000;
-        const uint32_t turn_time2 = 5500000;
-        const uint32_t back_time = 1000000;
+        // 回避動作の継続時間
+        const uint32_t turn_time = 1 * 1000 * 1000;
+        const uint32_t turn_time2 = 5 * 5000 * 1000;
+        const uint32_t back_time = 1 * 1000 * 1000;
 
         int back_speed = -50;
         int turn_speed_weak = 5;
@@ -49,10 +46,10 @@ void Tracer::run() {
         int turn_speed_strong3 = 50;
         int slowdown_pwm = 15;
 
-        if (mode_lr == -1) {
-            // ↓ この命令が使えるようになります
+        if (mode_lr == -1) { // コースのLRに応じて曲がる方向を変える
             std::swap(turn_speed_weak, turn_speed_strong);
             std::swap(turn_speed_weak2, turn_speed_strong2);
+            std::swap(turn_speed_weak3, turn_speed_strong3);
         }
 
         // avoidance_timerの時間に応じて回避動作を段階的に制御
@@ -68,7 +65,7 @@ void Tracer::run() {
         } else if (avoidance_timer.now() < (back_time + turn_time) + turn_time2) {
 
             if (!is_black) {
-                // フェーズ5: 2回目の旋回（例: 左に旋回し、元の向きに戻る）
+                // 2回目の旋回（例: 左に旋回し、障害物をよける）
                 leftWheel.setPower(turn_speed_weak2 + bias);
                 rightWheel.setPower(turn_speed_strong2 - bias);
             } else {
@@ -77,7 +74,7 @@ void Tracer::run() {
             }
 
         } else if (avoidance_timer.now() < (back_time + (turn_time * 2)) + turn_time2) {
-            // フェーズ6: 元のラインに戻るための旋回
+            // 元のラインに戻るための旋回
             leftWheel.setPower(turn_speed_strong3 + bias);
             rightWheel.setPower(turn_speed_weak3 - bias);
         } else {
@@ -91,23 +88,14 @@ void Tracer::run() {
 
         return; // 回避モード中は以降のライン追従ロジックは実行しない
     }
-    // ここまで
 
-    if (straight_mode == 1) { // 直進モード
+    if (straight_mode == 1) {
         leftWheel.setPower(90 + bias);
         rightWheel.setPower(90 - bias);
         return; // 直進モード中は以降のライン追従ロジックは実行しない
     }
 
-    int blue = count_blue; // 青色の検知回数
-
-    /*
-      if(blue >= 1 && !pwm_dec){
-        pwm = pwm -10;
-        pwm_dec = true;
-
-      }
-        */
+    int blue = count_blue;
 
     int pwm_l;
     int pwm_r;
@@ -116,7 +104,6 @@ void Tracer::run() {
     if (blue == 5) { // 青い丸の部分を通過するときの処理
 
         // printf("Blue Count is 5 !\n");
-        // float turn = calc_prop_value();
 
         if (blue_count_5_straight.now() <= straight_duration) {
 
@@ -139,17 +126,6 @@ void Tracer::run() {
         float turn = calc_prop_value();
         if (blue == 0) { // 青色のカウントが0のときの処理
 
-            /*if (leftWheel.getPower() == rightWheel.getPower() && leftWheel.getPower() == 0) {
-                speeddown_clock.reset();
-            }
-
-            if (speeddown_clock.now() >= 11000000  && speeddown_clock.now() < 20000000 * 10) { // 11秒以上から20秒以内の直進しているときには、減速する
-                pwm_l = pwm + turn - 20;
-                pwm_r = pwm - turn - 20;
-            } else {
-                pwm_l = pwm + turn;
-                pwm_r = pwm - turn;
-            }*/
             pwm_l = pwm + turn;
             pwm_r = pwm - turn;
 
@@ -196,26 +172,13 @@ void Tracer::run() {
     }
 }
 
-/*
-float Tracer::calc_prop_value() {
-
-  const int tracemode_lr = mode_lr; // app.cppを参照
-  const float Kp = 0.60;
-  const int target = 50;
-
-  int diff = colorSensor.getReflection() - target;
-
-  return (tracemode_lr * Kp * diff) + bias;
-}
-  */
-
 float Tracer::calc_prop_value() {
 
     const int tracemode_lr = mode_lr; // app.cppを参照
-    const float Kp = 0.55;
+    const float Kp = 0.55;            // 大きくするとパワーの調整量が大きくなりやすくなる
     const int target = 55;
-    const float Ki = 0.001;
-    const float Kd = 0.20;
+    const float Ki = 0.001; // 大きくすると同じ色をとり続けた時の調整量が大きくなりやすくなる
+    const float Kd = 0.20;  // 大きくすると急激な変化に対して調整量が大きくなりやすくなる
     int diff_D = 0;
 
     int reflection = colorSensor.getReflection();
@@ -236,5 +199,5 @@ float Tracer::calc_prop_value() {
     target_D = reflection;
     prev_diff_P = diff_P;
 
-    return (tracemode_lr * Kp * diff_P) + (tracemode_lr * Ki * integral) + (tracemode_lr * Kd * diff_D) + bias;
+    return ((Kp * diff_P) + (Ki * integral) + (Kd * diff_D)) * tracemode_lr + bias;
 }
